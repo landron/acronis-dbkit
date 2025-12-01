@@ -34,13 +34,13 @@ linters-settings:
         disabled: true
 
 linters:
-  disable-all: true
+  # disable-all: true
   enable:
     - bodyclose
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
+    # - exportloopref
     - funlen
     - gochecknoinits
     - goconst

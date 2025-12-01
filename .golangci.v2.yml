@@ -1,0 +1,85 @@
+version: "2"
+linters:
+  enable:
+    - bodyclose
+    - dogsled
+    - dupl
+    - funlen
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gosec
+    - lll
+    - misspell
+    - nakedret
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+    funlen:
+      lines: 100
+      statements: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      disabled-checks:
+        - whyNoLint
+        - unnecessaryDefer
+        - paramTypeCombine
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+        - experimental
+      settings:
+        hugeParam:
+          sizeThreshold: 256
+        rangeValCopy:
+          sizeThreshold: 256
+    gocyclo:
+      min-complexity: 15
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - dogsled
+          - dupl
+          - errcheck
+          - funlen
+          - goconst
+          - gocritic
+          - gocyclo
+          - gosec
+          - govet
+          - ineffassign
+          - lll
+          - noctx
+          - unused
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
