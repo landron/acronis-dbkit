@@ -1,0 +1,4 @@
+linters-settings:
+  lll:
+    # avoid scroll in ReadMe files, when viewed in browser 
+    line-length: 80

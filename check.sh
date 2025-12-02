@@ -19,6 +19,13 @@ $GO mod tidy
 
 $GO build ./...
 
+$GO build -o .build ./dbrutil/examples/dbr-instrumentation-1
+# MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-1
+$GO build -o .build ./dbrutil/examples/dbr-instrumentation-2
+# MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-2
+# http://localhost:8080/metrics 
+# http://localhost:8080/long_operation
+
 # github.com/acronis/go-dbkit/distrlock   108.021s
 SLOW_PKGS=(
   "github.com/acronis/go-dbkit/distrlock"
@@ -36,6 +43,8 @@ fi
 
 echo
 golangci-lint-v1 run -v --timeout 600s
+# TODO: it does not work
+# golangci-lint-v1 run -c ./dbrutil/examples/.golangci.yml ./dbrutil/examples/...
 
 if false; then
     # 49 issues:

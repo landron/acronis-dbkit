@@ -1,0 +1,135 @@
+# docker-compose -f testing/docker/docker-compose.yml up -d
+#
+# TODO: replace config parameter with DSN ./ci-seagate migrate-db,
+#   like sqlserver://username:<your password>@localhost:1433?database=dbkit_test
+# TODO: one docker-compose for each DB
+
+x-logging: &no-logging
+  driver: local
+
+services:
+  mysql:
+    # image: "artifactory.corp.acronis.com/global-docker-prod-local-mirror/mariadb:10.11"
+    # it allows MYSQL_ mariadb environment variables (MYSQL_ instead of MARIADB_)
+    #   also tool renamed from mysql to mariadb
+    # image: "mariadb:10.11"
+    image: "mariadb:latest"
+    container_name: mysql
+    expose:
+      - 3306
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_USER: root
+      MARIADB_ALLOW_EMPTY_PASSWORD: 1
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+      MARIADB_DATABASE: dbkit_test
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mariadb",
+          "-u",
+          "root",
+          "-h",
+          "127.0.0.1",
+          "--database=dbkit_test",
+          "-e",
+          "SELECT 1;",
+        ]
+      interval: 5s
+      retries: 10
+      timeout: 5s
+    command: >
+      --character-set-server=utf8
+      --collation-server=utf8_unicode_ci
+    logging: *no-logging
+    security_opt:
+      - seccomp:unconfined # Needed only for CI until docker is updated on ci-nodes, https://github.com/MariaDB/mariadb-docker/issues/434#issuecomment-1136151239
+    # profiles:
+    #   - donotstart
+
+  postgres:
+    image: "postgres:16-alpine"
+    container_name: postgres
+    expose:
+      - 5432
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: qwe123QWE
+      POSTGRES_DB: dbkit_test
+    logging: *no-logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    profiles:
+      - donotstart
+
+  # $ docker exec -it mssql /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P qwe123QWE -C
+  # 1> SELECT name FROM sys.databases;
+  # 2> GO
+  # name
+  # --------------------------------------------------------------------------------------------------------------------------------
+  # master
+  # tempdb
+  # model
+  # msdb
+  # (4 rows affected)
+  # 1> exit
+
+  # mssqldocker does more: see https://github.com/mcmoe/mssqldocker
+  #    echo :setvar MSSQL_DB $MSSQL_DB > param_setup.sql
+  #    echo :setvar MSSQL_USER $MSSQL_USER > param_setup.sql
+  #    echo :setvar MSSQL_PASSWORD $MSSQL_PASSWORD > param_setup.sql
+
+  mssql:
+    # image: "artifactory.corp.acronis.com/global-docker-prod-local-mirror/mcmoe/mssqldocker:v2017.CU24.0"
+    image: mcr.microsoft.com/mssql/server:latest
+    container_name: mssql
+    expose:
+      - 1433
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: qwe123QWE
+    logging: *no-logging
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/mssql-tools18/bin/sqlcmd",
+          "-S",
+          "localhost",
+          "-U",
+          "sa",
+          "-P",
+          "qwe123QWE",
+          "-Q",
+          "SELECT 1",
+          "-C",
+        ]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+      start_period: 10s
+    profiles:
+      - donotstart
+
+  init-mssql-db:
+    image: mcr.microsoft.com/mssql-tools
+    depends_on:
+      mssql:
+        condition: service_healthy
+    volumes:
+      - ./init.mssql.sql:/init.sql
+    entrypoint: >
+      /bin/bash -c "
+        /opt/mssql-tools/bin/sqlcmd -S mssql -U sa -P qwe123QWE -i /init.sql
+      "
+    profiles:
+      - donotstart
