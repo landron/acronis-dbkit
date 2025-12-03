@@ -45,8 +45,8 @@ func Example() {
 	retryPolicy := retry.NewConstantBackoffPolicy(10*time.Millisecond, 3)
 	if err = dbkit.DoInTx(context.Background(), db, func(tx *sql.Tx) error {
 		// Execute your transactional operations here.
-		// Example: _, err := tx.Exec("UPDATE users SET last_login = ? WHERE id = ?", time.Now(),
-		//  1)
+		// Example: _, err := tx.Exec("UPDATE users SET last_login = ? WHERE id = ?",
+		// time.Now(), 1)
 		return nil
 	}, dbkit.WithRetryPolicy(retryPolicy)); err != nil {
 		log.Fatal(err)

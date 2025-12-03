@@ -54,11 +54,6 @@ func ExampleDoExclusively() {
 }
 
 func ExampleNewDBManager() {
-	// Output comparison: redirect log output to stdout and disable timestamps for
-	// stable output
-	log.SetOutput(os.Stdout)
-	log.SetFlags(0)
-
 	// Setup database connection
 	db, err := sql.Open("mysql", os.Getenv("MYSQL_DSN"))
 	if err != nil {
@@ -98,7 +93,10 @@ func ExampleNewDBManager() {
 	defer func() {
 		if err = lock.Release(ctx, db); err != nil {
 			if strings.Contains(err.Error(), "distributed lock already released") {
-				log.Println("distributed lock already released")
+				// Output comparison: redirect log output to stdout and disable
+				// timestamps for stable output
+				logger := log.New(os.Stdout, "", 0)
+				logger.Println("distributed lock already released")
 				return
 			}
 			log.Fatal(err)
