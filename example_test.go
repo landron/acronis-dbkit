@@ -51,4 +51,6 @@ func Example() {
 	}, dbkit.WithRetryPolicy(retryPolicy)); err != nil {
 		log.Fatal(err)
 	}
+
+	// Output:
 }

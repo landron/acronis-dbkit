@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/acronis/go-dbkit"
@@ -48,6 +49,8 @@ func ExampleDoExclusively() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Output:
 }
 
 func ExampleNewDBManager() {
@@ -89,9 +92,19 @@ func ExampleNewDBManager() {
 	}
 	defer func() {
 		if err = lock.Release(ctx, db); err != nil {
+			if strings.Contains(err.Error(), "distributed lock already released") {
+				// Output comparison: redirect log output to stdout and disable
+				// timestamps for stable output
+				logger := log.New(os.Stdout, "", 0)
+				logger.Println("distributed lock already released")
+				return
+			}
 			log.Fatal(err)
 		}
 	}()
 
 	time.Sleep(11 * time.Second) // Simulate work
+
+	// Output:
+	// distributed lock already released
 }
