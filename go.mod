@@ -1,5 +1,6 @@
 module github.com/acronis/go-dbkit
 
+// gvm use go1.20.14
 go 1.20
 
 require (

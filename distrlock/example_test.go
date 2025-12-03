@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/acronis/go-dbkit"
@@ -38,17 +39,26 @@ func ExampleDoExclusively() {
 	}
 
 	// Do some work exclusively.
-	const lockKey = "test-lock-key-1" // Unique key that will be used to ensure exclusive execution among multiple instances
-	err = distrlock.DoExclusively(ctx, db, dbkit.DialectMySQL, lockKey, func(ctx context.Context) error {
-		time.Sleep(10 * time.Second) // Simulate work.
-		return nil
-	})
+	// Unique key that will be used to ensure exclusive execution among multiple instances
+	const lockKey = "test-lock-key-1"
+	err = distrlock.DoExclusively(ctx, db, dbkit.DialectMySQL, lockKey,
+		func(ctx context.Context) error {
+			time.Sleep(10 * time.Second) // Simulate work.
+			return nil
+		})
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Output:
 }
 
 func ExampleNewDBManager() {
+	// Output comparison: redirect log output to stdout and disable timestamps for
+	// stable output
+	log.SetOutput(os.Stdout)
+	log.SetFlags(0)
+
 	// Setup database connection
 	db, err := sql.Open("mysql", os.Getenv("MYSQL_DSN"))
 	if err != nil {
@@ -71,7 +81,8 @@ func ExampleNewDBManager() {
 		log.Fatal(err)
 	}
 
-	const lockKey = "test-lock-key-2" // Unique key that will be used to ensure exclusive execution among multiple instances
+	// Unique key that will be used to ensure exclusive execution among multiple instances
+	const lockKey = "test-lock-key-2"
 
 	// Create lock.
 	lock, err := lockManager.NewLock(ctx, db, lockKey)
@@ -86,9 +97,16 @@ func ExampleNewDBManager() {
 	}
 	defer func() {
 		if err = lock.Release(ctx, db); err != nil {
+			if strings.Contains(err.Error(), "distributed lock already released") {
+				log.Println("distributed lock already released")
+				return
+			}
 			log.Fatal(err)
 		}
 	}()
 
-	time.Sleep(10 * time.Second) // Simulate work
+	time.Sleep(11 * time.Second) // Simulate work
+
+	// Output:
+	// distributed lock already released
 }

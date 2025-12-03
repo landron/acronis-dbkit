@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO: start a dockerized mariadb for testing
+
 # -e: exit on error
 # -u: undefined vars are errors
 # -o pipefail: pipeline fails if any command fails
@@ -22,9 +24,17 @@ $GO build ./...
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-1
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-1
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-2
+# docker-compose -f testing/docker/docker-compose.yml up -d
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-2
 # http://localhost:8080/metrics 
 # http://localhost:8080/long_operation
+
+# MYSQL_USER=root MYSQL_DATABASE=dbkit_test go test -run Example
+# MYSQL_DSN="root@tcp(localhost:3306)/dbkit_test" go test -run Example ./distrlock
+#   MYSQL_DSN="root@tcp(localhost:3306)/dbkit_test" go test -run ExampleNewDBManager ./distrlock
+export MYSQL_USER=root
+export MYSQL_DATABASE=dbkit_test
+export MYSQL_DSN="${MYSQL_USER}@tcp(localhost:3306)/${MYSQL_DATABASE}"
 
 # github.com/acronis/go-dbkit/distrlock   108.021s
 SLOW_PKGS=(
@@ -34,10 +44,12 @@ SLOW_PKGS=(
 )
 FAST_PKGS=$(go list ./... | grep -v -F -e "${SLOW_PKGS[0]}" -e "${SLOW_PKGS[1]}" -e "${SLOW_PKGS[2]}")
 echo "Running fast tests..."
+go test -run Example
 go test $FAST_PKGS
 # run slow tests only if SLOW=1
 if [ "${SLOW:-0}" = "1" ]; then
     echo "Running slow tests..."
+    # go test -run Example ./distrlock # already run below
     go test "${SLOW_PKGS[@]}"
 fi
 
