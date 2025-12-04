@@ -77,7 +77,12 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/long-operation", h)
 	mux.Handle("/metrics", promhttp.Handler())
-	if srvErr := http.ListenAndServe(":8080", mux); srvErr != nil && errors.Is(srvErr, http.ErrServerClosed) {
+	server := &http.Server{
+		Addr:        ":8080",
+		Handler:     mux,
+		ReadTimeout: 15 * time.Second,
+	}
+	if srvErr := server.ListenAndServe(); srvErr != nil && !errors.Is(srvErr, http.ErrServerClosed) {
 		stdlog.Fatalf("failed to start server: %v", srvErr)
 	}
 }
