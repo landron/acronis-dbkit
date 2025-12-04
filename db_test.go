@@ -186,8 +186,13 @@ func TestDoInTxWithRetryPolicy(t *testing.T) {
 			},
 			fnProvider: func() func(tx *sql.Tx) error {
 				return func(tx *sql.Tx) error {
-					_, queryErr := tx.Query("SELECT 1")
-					return queryErr
+					rows, queryErr := tx.Query("SELECT 1")
+					if queryErr != nil {
+						return queryErr
+					}
+					defer rows.Close()
+					require.NoError(t, rows.Err())
+					return rows.Err()
 				}
 			},
 		},
@@ -207,8 +212,13 @@ func TestDoInTxWithRetryPolicy(t *testing.T) {
 					if attempts < 2 {
 						return retryableError
 					}
-					_, queryErr := tx.Query("SELECT 1")
-					return queryErr
+					rows, queryErr := tx.Query("SELECT 1")
+					if queryErr != nil {
+						return queryErr
+					}
+					defer rows.Close()
+					require.NoError(t, rows.Err())
+					return rows.Err()
 				}
 			},
 		},

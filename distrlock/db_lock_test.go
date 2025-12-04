@@ -51,7 +51,7 @@ func TestDBLock_DoExclusively_MySQL(t *gotesting.T) {
 	runDBLockDoExclusivelyTests(t, dbkit.DialectMySQL)
 }
 
-//nolint:gocyclo
+//nolint:gocyclo, thelper
 func runDBManagerTests(t *gotesting.T, dialect dbkit.Dialect) {
 	containerCtx, containerCtxClose := context.WithTimeout(context.Background(), time.Minute*2)
 	defer containerCtxClose()
@@ -458,6 +458,7 @@ func runDBManagerTests(t *gotesting.T, dialect dbkit.Dialect) {
 	})
 }
 
+//nolint:thelper
 func runDBLockDoExclusivelyTests(t *gotesting.T, dialect dbkit.Dialect) {
 	containerCtx, containerCtxClose := context.WithTimeout(context.Background(), time.Minute*2)
 	defer containerCtxClose()
@@ -585,6 +586,7 @@ func makeTwoLocks(
 	return
 }
 
+//nolint:thelper
 func assertRollbackWithCtxTimeoutError(t *gotesting.T, dialect dbkit.Dialect, tx *sql.Tx) func() {
 	return func() {
 		rollbackErr := tx.Rollback()

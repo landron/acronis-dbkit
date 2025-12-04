@@ -73,7 +73,7 @@ func (ns *NullTime) parseAsTimeString(s string) (time.Time, error) {
 // Value implements the driver Valuer interface.
 func (ns NullTime) Value() (driver.Value, error) {
 	if !ns.Valid {
-		return nil, nil
+		return nil, nil //nolint:nilnil // for database/sql NullTime compatibility
 	}
 	return ns.Time, nil
 }

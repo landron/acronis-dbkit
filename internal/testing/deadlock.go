@@ -18,6 +18,8 @@ import (
 )
 
 // DeadlockTest is internal function to simulate DB deadlock
+//
+//nolint:thelper
 func DeadlockTest(t *testing.T, dialect dbkit.Dialect, checkDeadlockErr func(err error) bool) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer ctxCancel()
@@ -91,7 +93,7 @@ func DeadlockTest(t *testing.T, dialect dbkit.Dialect, checkDeadlockErr func(err
 	require.True(t, checkDeadlockErr(tx2Err), "deadlock error is expecting at one of the goroutines")
 }
 
-func cleanupDB(ctx context.Context, dbConn *sql.DB, table1Name string, table2Name string) error {
+func cleanupDB(ctx context.Context, dbConn *sql.DB, table1Name, table2Name string) error {
 	return dbkit.DoInTx(ctx, dbConn, func(tx *sql.Tx) error {
 		if _, err := tx.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s;", table1Name)); err != nil {
 			return err
@@ -103,7 +105,7 @@ func cleanupDB(ctx context.Context, dbConn *sql.DB, table1Name string, table2Nam
 	})
 }
 
-func createTables(ctx context.Context, dbConn *sql.DB, table2Name string, table1Name string) error {
+func createTables(ctx context.Context, dbConn *sql.DB, table1Name, table2Name string) error {
 	tErr := dbkit.DoInTx(ctx, dbConn, func(tx *sql.Tx) error {
 		_, err := tx.Exec(fmt.Sprintf("CREATE TABLE %s (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL);", table2Name))
 		if err != nil {

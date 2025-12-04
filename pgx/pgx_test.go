@@ -62,6 +62,7 @@ func TestCheckInvalidCachedPlanError(t *gotesting.T) {
 	_, err = conn.ExecContext(ctx, "INSERT INTO drop_cols (f1, f2) VALUES (1, 2)")
 	require.NoError(t, err)
 
+	//nolint:unqueryvet // select * is needed for this test
 	getSQL := "SELECT * FROM drop_cols WHERE id = $1"
 
 	// This query will populate the statement cache. We don't care about the result.

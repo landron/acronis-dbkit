@@ -98,6 +98,7 @@ func queryDatabase(
 
 // BuildSQLAndExec is a function for running DML not returning any data like UPDATE, DELETE, INSERT
 func BuildSQLAndExec(q Querier, sqlExpression exp.SQLExpression) (sql.Result, error) {
+	//nolint:sqlclosecheck // exec does not return rows
 	result, _, _, err := queryDatabase(q, sqlExpression, Querier.Exec, nil, nil)
 	return result, err
 }
@@ -110,12 +111,14 @@ func BuildSQLAndQuery(q Querier, sqlExpression exp.SQLExpression) (*sql.Rows, er
 
 // BuildSQLAndQueryRow is a function for running SELECT statements returning single row
 func BuildSQLAndQueryRow(q Querier, sqlExpression exp.SQLExpression) (*sql.Row, error) {
+	//nolint:sqlclosecheck // queryRow does not return rows
 	_, _, row, err := queryDatabase(q, sqlExpression, nil, nil, Querier.QueryRow)
 	return row, err
 }
 
 // BuildSQLAndQueryScalar is a function for running SELECT statements returning single scalar value
 func BuildSQLAndQueryScalar(q Querier, sqlExpression exp.SQLExpression, scalar interface{}) error {
+	//nolint:sqlclosecheck // queryRow does not return rows
 	_, _, row, err := queryDatabase(q, sqlExpression, nil, nil, Querier.QueryRow)
 	if err != nil {
 		return fmt.Errorf("query failed: %w", err)

@@ -26,18 +26,19 @@ linters:
     - nakedret
     - nilerr
     - nilnil
-    - nlreturn
-    - noctx
+    # - nlreturn # nlreturn: 158
+    # - noctx # noctx: 12
     # - nolintlint # nolintlint: 16
     - prealloc
     - predeclared
     - revive
-    - rowserrcheck
+    # - rowserrcheck # rowserrcheck: 6
     - sqlclosecheck
     - staticcheck
     - thelper
     - unconvert
     - unparam
+    - unqueryvet
     - unused
     - usestdlibvars
     - wastedassign
@@ -54,8 +55,8 @@ linters:
     gocritic:
       disabled-checks:
         - whyNoLint
-        - unnecessaryDefer
-        - paramTypeCombine
+      #   - unnecessaryDefer
+      #   - paramTypeCombine
       enabled-tags:
         - diagnostic
         - experimental
@@ -81,31 +82,23 @@ linters:
     generated: lax
     rules:
       - linters:
-          - dogsled
-          - dupl
           - errcheck
           - funlen
           - goconst
           - gocritic
-          - gocyclo
-          - gosec
-          - govet
-          - ineffassign
-          - lll
-          - noctx
-          - unused
         path: _test\.go
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+      - linters:
+          - errcheck
+          - goconst
+        path: examples/.+
+
 formatters:
   enable:
     - gofmt
-    - gofumpt
+    # - gofumpt # gofumpt: 5
   exclusions:
     generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

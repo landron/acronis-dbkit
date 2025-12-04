@@ -55,26 +55,10 @@ fi
 
 echo
 golangci-lint-v1 run -v --timeout 600s
-# TODO: it does not work
+# TODO: change configuration for certain folders
 # golangci-lint-v1 run -c ./dbrutil/examples/.golangci.yml ./dbrutil/examples/...
 
-if false; then
-    # 49 issues:
-    # * contextcheck: 2
-    # * errcheck: 2
-    # * errorlint: 1
-    # * goconst: 2
-    # * gofumpt: 3
-    # * gosec: 1
-    # * lll: 1
-    # * nilnil: 1
-    # * nlreturn: 6
-    # * noctx: 5
-    # * nolintlint: 16
-    # * prealloc: 2
-    # * rowserrcheck: 3
-    # * staticcheck: 1
-    # * thelper: 3
+if true; then
     echo
     golangci-lint run -v --timeout 600s --config .golangci.v2.yml
 fi

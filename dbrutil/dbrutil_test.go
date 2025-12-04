@@ -9,6 +9,7 @@ package dbrutil
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -80,7 +81,8 @@ func TestDbrBegTxContextCancel(t *testing.T) {
 		err := tx.DoInTx(ctx, func(runner dbr.SessionRunner) error {
 			return nil
 		})
-		if txErr, ok := err.(*TxBeginError); ok && txErr.Inner == ctx.Err() {
+		var txErr *TxBeginError
+		if errors.As(err, &txErr) && errors.Is(txErr.Inner, ctx.Err()) {
 			err = nil
 		}
 		require.NoError(t, err)

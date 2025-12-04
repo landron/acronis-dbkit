@@ -221,6 +221,8 @@ func (l *DBLock) DoExclusively(
 		return acquireLockErr
 	}
 
+	//nolint:contextcheck // context.Background() is being used to allow lock release even
+	// if the passed ctx is already canceled
 	defer func() {
 		// If the ctx is canceled, we should be able to release the lock.
 		releaseCtx, releaseCtxCancel := context.WithTimeout(context.Background(), opts.releaseTimeout)
