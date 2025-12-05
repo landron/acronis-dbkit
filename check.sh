@@ -21,6 +21,8 @@ $GO mod tidy
 
 $GO build ./...
 
+### dbrutil examples
+
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-1
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-1
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-2
@@ -28,6 +30,8 @@ $GO build -o .build ./dbrutil/examples/dbr-instrumentation-2
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-2
 # http://localhost:8080/metrics 
 # http://localhost:8080/long_operation
+
+### migrations examples
 
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test go test -run Example
 # MYSQL_DSN="root@tcp(localhost:3306)/dbkit_test" go test -run Example ./distrlock

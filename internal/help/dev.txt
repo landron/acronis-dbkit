@@ -1,0 +1,6 @@
+######################
+Glossary
+
+dbrutil: Simplifies working with the gocraft/dbr query builder, adding instrumentation 
+    (Prometheus metrics, slow query logging) and transaction support (TxRunner).
+    
