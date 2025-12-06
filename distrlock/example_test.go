@@ -38,11 +38,13 @@ func ExampleDoExclusively() {
 	}
 
 	// Do some work exclusively.
-	const lockKey = "test-lock-key-1" // Unique key that will be used to ensure exclusive execution among multiple instances
-	err = distrlock.DoExclusively(ctx, db, dbkit.DialectMySQL, lockKey, func(ctx context.Context) error {
-		time.Sleep(10 * time.Second) // Simulate work.
-		return nil
-	})
+	// Unique key that will be used to ensure exclusive execution among multiple instances
+	const lockKey = "test-lock-key-1"
+	err = distrlock.DoExclusively(ctx, db, dbkit.DialectMySQL, lockKey,
+		func(ctx context.Context) error {
+			time.Sleep(10 * time.Second) // Simulate work.
+			return nil
+		})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,7 +73,8 @@ func ExampleNewDBManager() {
 		log.Fatal(err)
 	}
 
-	const lockKey = "test-lock-key-2" // Unique key that will be used to ensure exclusive execution among multiple instances
+	// Unique key that will be used to ensure exclusive execution among multiple instances
+	const lockKey = "test-lock-key-2"
 
 	// Create lock.
 	lock, err := lockManager.NewLock(ctx, db, lockKey)
@@ -90,5 +93,5 @@ func ExampleNewDBManager() {
 		}
 	}()
 
-	time.Sleep(10 * time.Second) // Simulate work
+	time.Sleep(11 * time.Second) // Simulate work
 }
