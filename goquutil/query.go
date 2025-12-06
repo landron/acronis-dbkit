@@ -198,7 +198,6 @@ func prepareSelectsForCompositeRecord(query *goqu.SelectDataset, structTyp inter
 	// this is needed to support LEFT JOINs when composite
 	// members do not allow scanning NULL database values
 	rec, _ := exp.NewRecordFromStruct(structTyp, false, false)
-	var selects []interface{}
 
 	type colV struct {
 		col      string
@@ -214,6 +213,7 @@ func prepareSelectsForCompositeRecord(query *goqu.SelectDataset, structTyp inter
 	})
 
 	dialectSqlite := query.Dialect().Dialect() == string(dbkit.DialectSQLite)
+	selects := make([]interface{}, 0, len(cols))
 	for i := range cols {
 		col, defaultV := cols[i].col, cols[i].defaultV
 		var selectExp exp.Expression
