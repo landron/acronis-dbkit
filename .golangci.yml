@@ -1,34 +1,29 @@
+# golangci-lint run -v --timeout 600s --config .golangci.yml
 version: "2"
 
 formatters:
   enable:
     - goimports
+    - gofmt
+    # - gofumpt # gofumpt: 5
   settings:
     goimports:
       local-prefixes:
         - github.com/acronis/go-dbkit/
+  exclusions:
+    generated: lax
 
 linters:
   settings:
     revive:
       rules:
-        - name: exported
-          disabled: true
-        - name: package-comments
+        - name: unused-parameter
           disabled: true
     gocyclo:
       min-complexity: 15
     goconst:
       min-len: 2
       min-occurrences: 2
-    govet:
-      settings:
-        printf:
-          funcs:
-            - (github.com/acronis/go-appkit/log.FieldLogger).Infof
-            - (github.com/acronis/go-appkit/log.FieldLogger).Warnf
-            - (github.com/acronis/go-appkit/log.FieldLogger).Errorf
-            - (github.com/acronis/go-appkit/log.FieldLogger).Debugf
     misspell:
       locale: US
     lll:
@@ -36,25 +31,34 @@ linters:
     gocritic:
       enabled-tags:
         - diagnostic
+        - experimental
+        - opinionated
         - performance
         - style
-        - experimental
-      disabled-checks:
-        - paramTypeCombine
-        - rangeValCopy
       settings:
         hugeParam:
+          sizeThreshold: 256
+        rangeValCopy:
           sizeThreshold: 256
     funlen:
       lines: 100
       statements: 50
 
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
     - bodyclose
+    - contextcheck
     - dogsled
     - dupl
+    - durationcheck
     - errcheck
+    - errname
+    - errorlint
+    - forbidigo
     - funlen
+    - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
@@ -64,28 +68,39 @@ linters:
     - lll
     - misspell
     - nakedret
+    - nilerr
+    - nilnil
+    # - nlreturn # nlreturn: 158
+    # - noctx # noctx: 12
+    # - nolintlint # nolintlint: 16
+    - prealloc
+    - predeclared
     - revive
+    # - rowserrcheck # rowserrcheck: 6
+    - sqlclosecheck
     - staticcheck
+    - thelper
     - unconvert
     - unparam
+    - unqueryvet
     - unused
+    - usestdlibvars
+    - wastedassign
     - whitespace
 
   exclusions:
     rules:
-      - path: '(.+)_test\.go'
-        linters:
-          - dogsled
-          - dupl
+      - linters:
           - errcheck
           - funlen
           - goconst
           - gocritic
-          - gocyclo
-          - gosec
-          - govet
-          - lll
-          - ineffassign
-          - noctx
-          - unparam
-          - unused
+        path: _test\.go
+      - linters:
+          - errcheck
+          - goconst
+        path: examples/.+
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

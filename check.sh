@@ -1,6 +1,27 @@
 #!/bin/bash
 
-# TODO: start a dockerized mariadb for testing
+wait_for_database() {
+    # git checkout dev -- testing/docker/docker-compose.yml check.sh
+
+    echo "Waiting for database to be ready..."
+    timeout 60 bash -c 'until docker compose -f testing/docker/docker-compose.yml ps mysql | grep -q "(healthy)"; do sleep 2; done'
+
+    # Test database connectivity
+    echo "Testing database connectivity..."
+    timeout 30 bash -c 'until docker exec mysql mariadb -uroot -e "SELECT 1" >/dev/null 2>&1; do
+      echo "Database not ready yet, waiting...";
+      sleep 2;
+    done'
+
+    # # Test schema is ready
+    # echo "Waiting for schema to be ready..."
+    # timeout 60 bash -c 'until docker exec mysql mysql -uroot -e "USE snactivation; SELECT 1" >/dev/null 2>&1; do
+    #   echo "Schema not ready yet, waiting...";
+    #   sleep 1;
+    # done'
+
+    echo "Database is ready, running tests..."
+}
 
 # -e: exit on error
 # -u: undefined vars are errors
@@ -9,9 +30,9 @@ set -euo pipefail
 
 start=$(date +%s)
 
-# gvm use go1.20.14
+# gvm use go1.24.12
 GO=go
-# GO=go1.20
+# GO=go1.24
 
 $GO mod tidy
 
@@ -26,9 +47,12 @@ $GO build ./...
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-1
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-1
 $GO build -o .build ./dbrutil/examples/dbr-instrumentation-2
-# docker-compose -f testing/docker/docker-compose.yml up -d
+
+docker compose -f testing/docker/docker-compose.yml up -d
+wait_for_database
+
 # MYSQL_USER=root MYSQL_DATABASE=dbkit_test ./.build/dbr-instrumentation-2
-# http://localhost:8080/metrics 
+# http://localhost:8080/metrics
 # http://localhost:8080/long_operation
 
 ### migrations examples
@@ -57,15 +81,10 @@ if [ "${SLOW:-0}" = "1" ]; then
     go test "${SLOW_PKGS[@]}"
 fi
 
-echo
-golangci-lint-v1 run -v --timeout 600s
-# TODO: change configuration for certain folders
-# golangci-lint-v1 run -c ./dbrutil/examples/.golangci.yml ./dbrutil/examples/...
+docker compose -f testing/docker/docker-compose.yml down
 
-if true; then
-    echo
-    golangci-lint run -v --timeout 600s --config .golangci.v2.yml
-fi
+echo
+golangci-lint run -v --timeout 600s
 
 echo
 echo "All checks passed successfully at $(date +'%H:%M:%S %d.%m')"

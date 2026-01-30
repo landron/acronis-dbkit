@@ -19,7 +19,7 @@ import (
 
 // DeadlockTest is internal function to simulate DB deadlock
 //
-//nolint:thelper
+//nolint:thelper // complex function
 func DeadlockTest(t *testing.T, dialect dbkit.Dialect, checkDeadlockErr func(err error) bool) {
 	ctx, ctxCancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer ctxCancel()

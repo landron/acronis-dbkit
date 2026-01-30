@@ -1,8 +1,8 @@
-# docker-compose -f testing/docker/docker-compose.yml up -d
+# docker compose -f testing/docker/docker-compose.yml up -d
 #
 # TODO: replace config parameter with DSN ./ci-seagate migrate-db,
 #   like sqlserver://username:<your password>@localhost:1433?database=dbkit_test
-# TODO: one docker-compose for each DB
+# TODO: one docker compose for each DB
 
 x-logging: &no-logging
   driver: local
