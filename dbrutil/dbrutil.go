@@ -212,9 +212,9 @@ func ParseAnnotationInQuery(query, prefix string, modifier func(string) string) 
 			}
 			if annotation != "" {
 				if buf.Len() != 0 {
-					buf.WriteString("|") // nolint: gosec
+					buf.WriteString("|") //nolint:gosec // bytes.Buffer.WriteString never returns an error
 				}
-				buf.WriteString(annotation) // nolint: gosec
+				buf.WriteString(annotation) //nolint:gosec // bytes.Buffer.WriteString never returns an error
 			}
 		}
 		left = right + 2
