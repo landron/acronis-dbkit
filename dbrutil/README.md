@@ -190,12 +190,14 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/long-operation", h)
 	mux.Handle("/metrics", promhttp.Handler())
-	server := &http.Server{
-		Addr:        ":8080",
-		Handler:     mux,
-		ReadTimeout: 15 * time.Second,
+	srv := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
-	if srvErr := server.ListenAndServe(); srvErr != nil && !errors.Is(srvErr, http.ErrServerClosed) {
+	if srvErr := srv.ListenAndServe(); srvErr != nil && !errors.Is(srvErr, http.ErrServerClosed) {
 		stdlog.Fatalf("failed to start server: %v", srvErr)
 	}
 }
@@ -252,7 +254,7 @@ db_query_duration_seconds_count{query="query:long_operation"} 1
 
 ## License
 
-Copyright © 2024-2025 Acronis International GmbH.
+Copyright © 2025-2026 Acronis International GmbH.
 
 Licensed under [MIT License](./../LICENSE).
 
