@@ -9,14 +9,16 @@ package v2
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
 	"time"
 
 	"github.com/acronis/go-appkit/log"
-	"github.com/acronis/go-dbkit"
 	"github.com/doug-martin/goqu/v9"
+
+	"github.com/acronis/go-dbkit"
 )
 
 // Manager handles database migration execution and tracking.
@@ -135,7 +137,11 @@ func (m *Manager) getAppliedMigrations(ctx context.Context) (map[string]struct{}
 	if err != nil {
 		return nil, fmt.Errorf("query applied migrations: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			m.logger.Warn("failed to close rows", log.Error(err))
+		}
+	}()
 
 	applied := make(map[string]struct{})
 	for rows.Next() {
@@ -207,7 +213,11 @@ func (m *Manager) executeWithTx(ctx context.Context, mig Migration, direction Di
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback() // nolint: errcheck
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			m.logger.Warn("transaction rollback failed", log.Error(err))
+		}
+	}()
 
 	if err := m.executeMigrationSteps(ctx, tx, mig, direction); err != nil {
 		return err

@@ -9,6 +9,8 @@ package v2
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/acronis/go-dbkit"
 )
 
@@ -44,9 +46,7 @@ func TestGetCreateTableSQL_AllDialects(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(string(tt.dialect), func(t *testing.T) {
 			sql, err := getCreateTableSQL(tt.dialect, tableName)
-			if err != nil {
-				t.Fatalf("getCreateTableSQL failed: %v", err)
-			}
+			require.NoError(t, err, "getCreateTableSQL failed")
 
 			for _, want := range tt.wantContains {
 				if !contains(sql, want) {

@@ -24,9 +24,9 @@ import (
 const sqlCreateAndSeedTestUsersTable = `
 CREATE TABLE users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, created_at DATETIME DEFAULT NULL);
 INSERT INTO users(id, name, created_at) VALUES
-	(1, "Albert", "2021-11-01 00:00:00"), 
-	(2, "Bob", "2021-11-01 00:00:00"), 
-	(3, "John", "2021-11-01 00:00:00"), 
+	(1, "Albert", "2021-11-01 00:00:00"),
+	(2, "Bob", "2021-11-01 00:00:00"),
+	(3, "John", "2021-11-01 00:00:00"),
 	(4, "Sam", "2021-11-01 00:00:00");
 
 CREATE TABLE items (
@@ -96,7 +96,7 @@ func (s *goquSuite) TestBuildSQLAndExec() {
 	_ = s.db.DoInTx(func(q Querier) error {
 		var rowCount int
 		s.Require().NoError(
-			BuildSQLAndQueryScalar(q, s.bs.Dialect.From("users").Select(goqu.COUNT(goqu.Star())), &rowCount),
+			BuildSQLAndQueryScalar(q, s.bs.Dialect.From("users").Select(goqu.COUNT(goqu.L("1"))), &rowCount),
 		)
 		s.Require().Equal(4, rowCount)
 
@@ -104,7 +104,7 @@ func (s *goquSuite) TestBuildSQLAndExec() {
 		s.Require().NoError(err)
 
 		s.Require().NoError(
-			BuildSQLAndQueryScalar(q, s.bs.Dialect.From("users").Select(goqu.COUNT(goqu.Star())), &rowCount),
+			BuildSQLAndQueryScalar(q, s.bs.Dialect.From("users").Select(goqu.COUNT(goqu.L("1"))), &rowCount),
 		)
 		s.Require().Equal(3, rowCount)
 

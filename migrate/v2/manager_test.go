@@ -10,9 +10,10 @@ import (
 	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
-
 	"github.com/acronis/go-appkit/log"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/acronis/go-dbkit"
 	v2 "github.com/acronis/go-dbkit/migrate/v2"
@@ -46,34 +47,22 @@ func TestManager_BasicMigration(t *testing.T) {
 
 	// Run migration up
 	count, err := mgr.Run(migrations, v2.DirectionUp)
-	if err != nil {
-		t.Fatalf("Failed to run migration up: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("Expected 1 migration applied, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run migration up")
+	assert.Equal(t, 1, count, "Expected 1 migration applied")
 
 	// Verify table exists
 	var tableName string
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'").Scan(&tableName)
-	if err != nil {
-		t.Fatalf("Table not created: %v", err)
-	}
+	require.NoError(t, err, "Table not created")
 
 	// Run migration down
 	count, err = mgr.Run(migrations, v2.DirectionDown)
-	if err != nil {
-		t.Fatalf("Failed to run migration down: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("Expected 1 migration rolled back, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run migration down")
+	assert.Equal(t, 1, count, "Expected 1 migration rolled back")
 
 	// Verify table no longer exists
 	err = db.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'").Scan(&tableName)
-	if err != sql.ErrNoRows {
-		t.Errorf("Expected table to be dropped, got: %v", err)
-	}
+	assert.Equal(t, sql.ErrNoRows, err, "Expected table to be dropped")
 }
 
 func TestManager_MultipleMigrations(t *testing.T) {
@@ -110,21 +99,13 @@ func TestManager_MultipleMigrations(t *testing.T) {
 
 	// Run all migrations up
 	count, err := mgr.Run(migrations, v2.DirectionUp)
-	if err != nil {
-		t.Fatalf("Failed to run migrations up: %v", err)
-	}
-	if count != 2 {
-		t.Errorf("Expected 2 migrations applied, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run migrations up")
+	assert.Equal(t, 2, count, "Expected 2 migrations applied")
 
 	// Run again - should apply 0 migrations (already applied)
 	count, err = mgr.Run(migrations, v2.DirectionUp)
-	if err != nil {
-		t.Fatalf("Failed to run migrations (second time): %v", err)
-	}
-	if count != 0 {
-		t.Errorf("Expected 0 migrations applied on second run, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run migrations (second time)")
+	assert.Equal(t, 0, count, "Expected 0 migrations applied on second run")
 }
 
 func TestManager_RunLimit(t *testing.T) {
@@ -150,19 +131,11 @@ func TestManager_RunLimit(t *testing.T) {
 
 	// Apply only 1 migration
 	count, err := mgr.RunLimit(migrations, v2.DirectionUp, 1)
-	if err != nil {
-		t.Fatalf("Failed to run limited migrations: %v", err)
-	}
-	if count != 1 {
-		t.Errorf("Expected 1 migration applied, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run limited migrations")
+	assert.Equal(t, 1, count, "Expected 1 migration applied")
 
 	// Apply next 2 migrations
 	count, err = mgr.RunLimit(migrations, v2.DirectionUp, 2)
-	if err != nil {
-		t.Fatalf("Failed to run remaining migrations: %v", err)
-	}
-	if count != 2 {
-		t.Errorf("Expected 2 migrations applied, got %d", count)
-	}
+	require.NoError(t, err, "Failed to run remaining migrations")
+	assert.Equal(t, 2, count, "Expected 2 migrations applied")
 }
