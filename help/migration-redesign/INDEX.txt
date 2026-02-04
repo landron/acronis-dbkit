@@ -1,0 +1,140 @@
+═══════════════════════════════════════════════════════════════════════════════
+                   MIGRATION ENGINE REDESIGN - SPEC INDEX
+═══════════════════════════════════════════════════════════════════════════════
+
+QUICK START (READ IN THIS ORDER)
+────────────────────────────────────────────────────────────────────────────────
+1. 00_SUMMARY.md              ← Start here (your questions answered)
+2. FAQ.md                      ← Deep dive into your 4 specific questions
+3. VISUAL_COMPARISON.md        ← See the differences with diagrams
+4. 001_migration-engine-design.md ← Full technical specification
+5. plan.md                     ← 7-phase implementation timeline
+
+NAVIGATION
+────────────────────────────────────────────────────────────────────────────────
+README.md                      Navigation hub with links to all docs
+
+SUPPORTING DOCS
+────────────────────────────────────────────────────────────────────────────────
+IMPROVEMENTS.md                What changed in the specs
+DELIVERABLES.txt              Summary of what was delivered
+INDEX.txt                      This file
+
+
+YOUR 4 QUESTIONS - QUICK ANSWERS
+────────────────────────────────────────────────────────────────────────────────
+
+Q1: "Simpler schema (no `Up` column)" - what does this mean?
+    → FAQ.md - Question 1 (3 pages, tables, examples)
+    → Or: VISUAL_COMPARISON.md - Section 1 (ASCII diagrams)
+
+Q2: What do UpSQL() and DownSQL() return?
+    → FAQ.md - Question 2 (detailed explanation, examples)
+    → Or: VISUAL_COMPARISON.md - Section 5 (parsing example)
+
+Q3: Are migrations SQL strings? Why not files?
+    → FAQ.md - Question 3 (3 approaches explained)
+    → Or: VISUAL_COMPARISON.md - Section 3 (file organization)
+
+Q4: Performance testing - how to measure?
+    → FAQ.md - Question 4 (methodology, benchmarks)
+    → Or: 001_migration-engine-redesign.md - Performance Testing section
+
+
+IMPLEMENTATION GUIDE
+────────────────────────────────────────────────────────────────────────────────
+
+Timeline:     See plan.md (7 phases, 2-3 weeks)
+Architecture: See 001_migration-engine-redesign.md
+Testing:      See plan.md - Phase 5
+Performance:  See 001_migration-engine-redesign.md - Performance Testing
+
+
+KEY DESIGN DECISIONS
+────────────────────────────────────────────────────────────────────────────────
+
+✓ Schema:        2 columns (id, applied_at) vs 3 in sql-migrate
+✓ SQL modes:     3 approaches (embed.FS files, Go strings, custom)
+✓ Statements:    Split into individual statements (better errors)
+✓ Transactions:  Per-migration control via TxDisabler interface
+✓ Compatibility: Backward compatible (drop-in replacement)
+✓ Performance:   30-40% fewer allocations expected
+
+
+WHAT'S IN THE BOX
+────────────────────────────────────────────────────────────────────────────────
+
+Specifications:      7 markdown files, 2,171 lines total
+Prototype code:      migrate/v2/ package with core implementation
+Test fixtures:       4 sample SQL migrations in testdata/
+Implementation plan: Detailed 7-phase timeline with checkpoints
+
+
+WHERE TO START BASED ON YOUR ROLE
+────────────────────────────────────────────────────────────────────────────────
+
+Manager/Architect:
+  1. 00_SUMMARY.md
+  2. plan.md (Timeline & phases)
+  3. IMPROVEMENTS.md
+
+Developer:
+  1. FAQ.md (Understand design)
+  2. 001_migration-engine-redesign.md (Full spec)
+  3. migrate/v2/ (Code)
+  4. plan.md (Implementation steps)
+
+DBA/SQL Person:
+  1. VISUAL_COMPARISON.md (Schema, SQL organization)
+  2. FAQ.md - Question 3 (SQL file support)
+  3. 001_migration-engine-redesign.md - Section 4 (File loading)
+
+DevOps/Testing:
+  1. plan.md - Phase 5 (Integration testing)
+  2. 001_migration-engine-redesign.md - Performance Testing
+  3. FAQ.md - Question 4 (Performance metrics)
+
+
+QUICK REFERENCE - WHAT'S WHERE
+────────────────────────────────────────────────────────────────────────────────
+
+Topic                          Document               Section
+────────────────────────────────────────────────────────────────────────────────
+Schema comparison              VISUAL_COMPARISON      #1
+Interface design               001_redesign           #2, FAQ #1-2
+File organization              VISUAL_COMPARISON      #3
+SQL statement parsing          VISUAL_COMPARISON      #5
+Performance metrics            VISUAL_COMPARISON      #7, FAQ #4
+Error handling                 001_redesign           Architecture
+Testing strategy               plan.md                Phase 5
+Database compatibility         001_redesign           Database Compatibility
+Transaction management         001_redesign           Architecture #1
+Migration execution flow       001_redesign           Execution Flow diagram
+Implementation timeline        plan.md                Phase breakdown
+Rollback strategy              plan.md                Rollback Plan
+API compatibility              VISUAL_COMPARISON      #8
+
+
+DOCUMENTS BY SIZE
+────────────────────────────────────────────────────────────────────────────────
+  467 lines  001_migration-engine-redesign.md
+  436 lines  plan.md
+  380 lines  FAQ.md
+  280 lines  VISUAL_COMPARISON.md
+  237 lines  00_SUMMARY.md
+  187 lines  IMPROVEMENTS.md
+  184 lines  README.md
+  ────────
+  2171 lines TOTAL
+
+
+NEXT ACTION
+────────────────────────────────────────────────────────────────────────────────
+
+1. Read 00_SUMMARY.md (this overview)
+2. Check FAQ.md for your specific questions
+3. Review 001_migration-engine-redesign.md for full spec
+4. Follow plan.md for implementation
+5. Start with: git checkout -b feature/migrate-v2
+
+═══════════════════════════════════════════════════════════════════════════════
