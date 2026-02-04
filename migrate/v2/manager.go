@@ -10,12 +10,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"sort"
 	"time"
 
 	"github.com/acronis/go-appkit/log"
-
 	"github.com/acronis/go-dbkit"
+	"github.com/doug-martin/goqu/v9"
 )
 
 // Manager handles database migration execution and tracking.
@@ -57,7 +58,29 @@ func NewMigrationsManager(db *sql.DB, dialect dbkit.Dialect, logger log.FieldLog
 		opt(m)
 	}
 
+	// Validate table name to avoid SQL injection via table name
+	var validTableName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	if !validTableName.MatchString(m.tableName) {
+		return nil, fmt.Errorf("invalid table name: %s", m.tableName)
+	}
+
 	return m, nil
+}
+
+// goquDialect returns a goqu dialect wrapper that matches the Manager's dialect.
+func (m *Manager) goquDialect() goqu.DialectWrapper {
+	switch m.dialect {
+	case dbkit.DialectPostgres, dbkit.DialectPgx:
+		return goqu.Dialect("postgres")
+	case dbkit.DialectMySQL:
+		return goqu.Dialect("mysql")
+	case dbkit.DialectSQLite:
+		return goqu.Dialect("sqlite3")
+	case dbkit.DialectMSSQL:
+		return goqu.Dialect("mssql")
+	default:
+		return goqu.Dialect("default")
+	}
 }
 
 // Run executes all pending migrations in the specified direction.
@@ -99,50 +122,35 @@ func (m *Manager) RunLimit(migrations []Migration, direction Direction, limit in
 	return count, nil
 }
 
-// getAppliedMigrations returns a map of migration IDs that have been applied.
-func (m *Manager) getAppliedMigrations(ctx context.Context) (map[string]time.Time, error) {
-	query := fmt.Sprintf("SELECT id, applied_at FROM %s WHERE up = 1", m.tableName)
-	rows, err := m.db.QueryContext(ctx, query)
+// getAppliedMigrations returns a set of migration IDs that have been applied.
+func (m *Manager) getAppliedMigrations(ctx context.Context) (map[string]struct{}, error) {
+	// Build a safe SQL query using goqu to avoid string formatting table names.
+	ds := m.goquDialect().From(goqu.T(m.tableName)).Select("id").Where(goqu.Ex{"up": 1})
+	sqlStr, args, err := ds.ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("build applied migrations query: %w", err)
+	}
+
+	rows, err := m.db.QueryContext(ctx, sqlStr, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query applied migrations: %w", err)
 	}
 	defer rows.Close()
 
-	applied := make(map[string]time.Time)
+	applied := make(map[string]struct{})
 	for rows.Next() {
 		var id string
-		var appliedAtStr string
-		if err := rows.Scan(&id, &appliedAtStr); err != nil {
+		if err := rows.Scan(&id); err != nil {
 			return nil, fmt.Errorf("scan migration row: %w", err)
 		}
-
-		// Parse time string based on dialect
-		var appliedAt time.Time
-		switch m.dialect {
-		case dbkit.DialectSQLite:
-			// SQLite stores as TEXT, needs parsing
-			t, err := time.Parse("2006-01-02 15:04:05", appliedAtStr)
-			if err != nil {
-				return nil, fmt.Errorf("parse applied_at time: %w", err)
-			}
-			appliedAt = t
-		default:
-			// Other dialects return time.Time directly via driver
-			t, err := time.Parse(time.RFC3339, appliedAtStr)
-			if err != nil {
-				return nil, fmt.Errorf("parse applied_at time: %w", err)
-			}
-			appliedAt = t
-		}
-
-		applied[id] = appliedAt
+		applied[id] = struct{}{}
 	}
 
 	return applied, rows.Err()
 }
 
 // filterMigrations determines which migrations to apply based on direction and current state.
-func (m *Manager) filterMigrations(migrations []Migration, applied map[string]time.Time, direction Direction, limit int) []Migration {
+func (m *Manager) filterMigrations(migrations []Migration, applied map[string]struct{}, direction Direction, limit int) []Migration {
 	// Sort migrations by ID
 	sorted := make([]Migration, len(migrations))
 	copy(sorted, migrations)
@@ -291,21 +299,43 @@ func (m *Manager) executeMigrationStepsNoTx(ctx context.Context, db *sql.DB, mig
 
 // recordMigration records a migration as applied or unapplied (within tx).
 func (m *Manager) recordMigration(ctx context.Context, tx *sql.Tx, id string, applied bool) error {
+	var upValue int
 	if applied {
-		query := fmt.Sprintf("INSERT INTO %s (id, applied_at) VALUES (?, ?)", m.tableName)
-		if m.dialect == dbkit.DialectPostgres || m.dialect == dbkit.DialectPgx {
-			query = fmt.Sprintf("INSERT INTO %s (id, applied_at) VALUES ($1, $2)", m.tableName)
+		upValue = 1
+	}
+
+	if applied {
+		// First attempt to update an existing record (handles re-apply after rollback).
+		upd := m.goquDialect().Update(m.tableName).Set(goqu.Record{"up": upValue, "applied_at": time.Now()}).Where(goqu.Ex{"id": id})
+		sqlStr, args, err := upd.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build update migration record query: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, query, id, time.Now()); err != nil {
+		res, err := tx.ExecContext(ctx, sqlStr, args...)
+		if err != nil {
+			return fmt.Errorf("update migration record: %w", err)
+		}
+		if ra, _ := res.RowsAffected(); ra > 0 {
+			return nil
+		}
+
+		// If no rows were updated, insert a new record.
+		ins := m.goquDialect().Insert(m.tableName).Rows(goqu.Record{"id": id, "applied_at": time.Now(), "up": upValue})
+		sqlStr2, args2, err := ins.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build insert migration record query: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, sqlStr2, args2...); err != nil {
 			return fmt.Errorf("insert migration record: %w", err)
 		}
 	} else {
-		query := fmt.Sprintf("DELETE FROM %s WHERE id = ?", m.tableName)
-		if m.dialect == dbkit.DialectPostgres || m.dialect == dbkit.DialectPgx {
-			query = fmt.Sprintf("DELETE FROM %s WHERE id = $1", m.tableName)
+		upd := m.goquDialect().Update(m.tableName).Set(goqu.Record{"up": upValue}).Where(goqu.Ex{"id": id})
+		sqlStr, args, err := upd.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build update migration record query: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, query, id); err != nil {
-			return fmt.Errorf("delete migration record: %w", err)
+		if _, err := tx.ExecContext(ctx, sqlStr, args...); err != nil {
+			return fmt.Errorf("update migration record: %w", err)
 		}
 	}
 
@@ -314,21 +344,42 @@ func (m *Manager) recordMigration(ctx context.Context, tx *sql.Tx, id string, ap
 
 // recordMigrationNoTx records a migration without a transaction.
 func (m *Manager) recordMigrationNoTx(ctx context.Context, id string, applied bool) error {
+	var upValue int
 	if applied {
-		query := fmt.Sprintf("INSERT INTO %s (id, applied_at) VALUES (?, ?)", m.tableName)
-		if m.dialect == dbkit.DialectPostgres || m.dialect == dbkit.DialectPgx {
-			query = fmt.Sprintf("INSERT INTO %s (id, applied_at) VALUES ($1, $2)", m.tableName)
+		upValue = 1
+	}
+
+	if applied {
+		// Try updating first.
+		upd := m.goquDialect().Update(m.tableName).Set(goqu.Record{"up": upValue, "applied_at": time.Now()}).Where(goqu.Ex{"id": id})
+		sqlStr, args, err := upd.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build update migration record query: %w", err)
 		}
-		if _, err := m.db.ExecContext(ctx, query, id, time.Now()); err != nil {
+		res, err := m.db.ExecContext(ctx, sqlStr, args...)
+		if err != nil {
+			return fmt.Errorf("update migration record: %w", err)
+		}
+		if ra, _ := res.RowsAffected(); ra > 0 {
+			return nil
+		}
+
+		ins := m.goquDialect().Insert(m.tableName).Rows(goqu.Record{"id": id, "applied_at": time.Now(), "up": upValue})
+		sqlStr2, args2, err := ins.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build insert migration record query: %w", err)
+		}
+		if _, err := m.db.ExecContext(ctx, sqlStr2, args2...); err != nil {
 			return fmt.Errorf("insert migration record: %w", err)
 		}
 	} else {
-		query := fmt.Sprintf("DELETE FROM %s WHERE id = ?", m.tableName)
-		if m.dialect == dbkit.DialectPostgres || m.dialect == dbkit.DialectPgx {
-			query = fmt.Sprintf("DELETE FROM %s WHERE id = $1", m.tableName)
+		upd := m.goquDialect().Update(m.tableName).Set(goqu.Record{"up": upValue}).Where(goqu.Ex{"id": id})
+		sqlStr, args, err := upd.ToSQL()
+		if err != nil {
+			return fmt.Errorf("build update migration record query: %w", err)
 		}
-		if _, err := m.db.ExecContext(ctx, query, id); err != nil {
-			return fmt.Errorf("delete migration record: %w", err)
+		if _, err := m.db.ExecContext(ctx, sqlStr, args...); err != nil {
+			return fmt.Errorf("update migration record: %w", err)
 		}
 	}
 
